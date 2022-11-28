@@ -2,24 +2,27 @@
 # Makefile for chat
 #
 # LIBS	= -lsocket -lnsl
-LIBS	=
+LIBS	= -lcrypto -lssl -lgnutls
 CFLAGS	= -g -ggdb -std=c99
 
-all:	nonblock
+all:	tls
 
-nonblock:	chatServer4 chatClient4 
+tls:	chatServer5 chatClient5 directoryServer5
 
-client4.o server4.o: inet.h
+client5.o server5.o directory5.o: inet.h
 
-chatServer4: server4.o
-	gcc $(CFLAGS) -o $@ chatServer4.c $(LIBS)
+chatServer5: server5.o
+	gcc $(CFLAGS) -o $@ chatServer5.c $(LIBS)
 
-chatClient4: client4.o
-	gcc $(CFLAGS) -o $@ chatClient4.c $(LIBS)
+chatClient5: client5.o
+	gcc $(CFLAGS) -o $@ chatClient5.c $(LIBS)
+
+directoryServer5: directory5.o
+	gcc $(CFLAGS) -o $@ directoryServer5.c $(LIBS)
 
 #
 # Clean up the mess we made
 #
 clean:
 	rm *.o \
-	chatServer4 chatClient4 directoryServer4 2>/dev/null
+	chatServer5 chatClient5 directoryServer5 2>/dev/null

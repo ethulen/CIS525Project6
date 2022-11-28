@@ -10,6 +10,7 @@
 #define MAX 100
 #define MAX_CLIENTS 5
 #define MAX_THREADS 5
+#define MAX_SERVERS 5
 
 #define SERV_TCP_PORT 53337
 #define CLI_TCP_PORT 28686
