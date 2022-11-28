@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------*/
-/* server.c - sample iterative time/date server.               */
+/* directoryServer5.c - sample iterative time/date server.               */
 /*-------------------------------------------------------------*/
 #include <stdio.h>
 #include <string.h>
