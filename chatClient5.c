@@ -1,5 +1,5 @@
 /*------------------------------------------------------*/
-/* chatClient4.c - UI for a chat room                   */
+/* chatClient5.c - UI for a chat room                   */
 /*------------------------------------------------------*/
 #include <stdio.h>
 #include <string.h>
