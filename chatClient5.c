@@ -23,6 +23,14 @@ int main()
     fd_set readset;
     unsigned int servlen; /* length of server addr*/
 
+    // Initializes Client SSL State
+    // SSL_METHOD *method;
+    // SSL_CTX *ctx;
+    // OpenSSL_add_all_algorithms();
+    // SSL_load_error_strings();
+    // method = SSLv2_client_method();
+    // ctx = SSL_CTX_new(method);
+
     // standard input (descriptor 0), and pipe input descriptor.
     i = 0;
 

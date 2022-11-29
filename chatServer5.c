@@ -13,6 +13,11 @@
 #include <string.h>
 #include <strings.h>
 #include "inet.h"
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 typedef struct User
 {
@@ -39,16 +44,26 @@ int main(int argc, char **argv)
     int maxfdp1, val, stdineof;
     ssize_t n, nwritten;
     fd_set readset, writeset;
-
     stdineof = 0;
 
-    // Initialize users to a "pseudo-NULL" state to begin
-    // for (int i = 0; i < MAX_CLIENTS; i++)
+    SSL_library_init();
+    // Initializes Server SSL State
+    SSL_METHOD *method;
+    SSL_CTX *ctx;
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    // TODO: Check SSLv2 or SSLv23
+    method = SSLv23_server_method();
+    ctx = SSL_CTX_new(method);
+
+    // Load Certificate and Private Key Files
+    // TODO: Create CertFile based on links in the assignment page
+    // SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM);
+    // TODO: Create KeyFile based on links in the assignment page
+    // SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM);
+    // if(!(SSL_CTX_check_private_key(ctx)))
     // {
-    //     struct User newUser;
-    //     newUser->socket = 0;
-    //     bzero(newUser.username, MAX);
-    //     users[i] = newUser;
+    //     fprintf(stderr, "Key & certificate don't match");
     // }
 
     hostSockfd = 0;
@@ -83,7 +98,7 @@ int main(int argc, char **argv)
 
         if ((j = select(maxfd + 1, &readset, &writeset, NULL, NULL)) > 0)
         {
-            fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
+
             if (FD_ISSET(hostSockfd, &readset))
             {
                 /* Accept a new connection request. */
@@ -95,163 +110,152 @@ int main(int argc, char **argv)
                     exit(1);
                 }
 
-                fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                val = fcntl(newsockfd, F_GETFL, 0);
-                fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
-
-                /* Read the username from the client. */
-                for (int i = 0; i < MAX_CLIENTS; i++)
+                // Create SSL Session State based on context & SSL_accept
+                SSL *ssl = SSL_new(ctx);
+                SSL_set_fd(ssl, newsockfd);
+                if (SSL_accept(ssl) == FAIL)
                 {
-                    if (users[i] != 0 && FD_ISSET(users[i]->socket, &readset))
+                    ERR_print_errors_fp(stderr);
+                }
+                else
+                {
+                    val = fcntl(newsockfd, F_GETFL, 0);
+                    fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
+
+                    /* Read the username from the client. */
+                    for (int i = 0; i < MAX_CLIENTS; i++)
                     {
-                        if ((n = read(users[i]->socket, users[i]->toiptr, &(users[i]->to[MAX]) - users[i]->toiptr)) > 0)
+                        if (users[i] != 0 && FD_ISSET(users[i]->socket, &readset))
                         {
-                            fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                            users[i]->toiptr += n;
-                            if (users[i]->toiptr == &(users[i]->to[MAX]))
+                            if ((n = read(users[i]->socket, users[i]->toiptr, &(users[i]->to[MAX]) - users[i]->toiptr)) > 0)
                             {
-                                printf("Read: %s\n", users[i]->to);
-                                // TODO: check buffer for username
-                                if (users[i]->username[0] == 0)
+                                users[i]->toiptr += n;
+                                if (users[i]->toiptr == &(users[i]->to[MAX]))
                                 {
-                                    bool dupName = false;
-                                    for (int k = 0; k < MAX_CLIENTS; k++)
+                                    printf("Read: %s\n", users[i]->to);
+                                    // TODO: check buffer for username
+                                    if (users[i]->username[0] == 0)
                                     {
-                                        if (users[k] != 0 && (strncmp(users[i]->to, users[k]->username, MAX) == 0))
+                                        bool dupName = false;
+                                        for (int k = 0; k < MAX_CLIENTS; k++)
                                         {
-                                            dupName = true;
-                                            break;
+                                            if (users[k] != 0 && (strncmp(users[i]->to, users[k]->username, MAX) == 0))
+                                            {
+                                                dupName = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (dupName)
+                                        {
+
+                                            snprintf(users[i]->fr, MAX, "%s", "Sorry, that user already exists. Please restart and try a different username!\n");
+                                            connectedClients--;
+                                            close(users[i]->socket);
+                                            free(users[i]);
+                                            users[i] = 0;
+                                        }
+                                        else
+                                        {
+                                            strncpy(users[i]->username, users[i]->fr, MAX);
+                                            bzero(users[i]->username, MAX);
                                         }
                                     }
-
-                                    if (dupName)
-                                    {
-                                        fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                                        snprintf(users[i]->fr, MAX, "%s", "Sorry, that user already exists. Please restart and try a different username!\n");
-                                        connectedClients--;
-                                        close(users[i]->socket);
-                                        free(users[i]);
-                                        users[i] = 0;
-                                    }
-                                    else
-                                    {
-                                        strncpy(users[i]->username, users[i]->fr, MAX);
-                                        bzero(users[i]->username, MAX);
-                                    }
                                 }
-                            }
 
-                            if (strstr(message, "/e") != NULL)
-                            {
-                                connectedClients--;
-                                close(users[i]->socket);
-                                fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                                for (int h = 0; h < MAX_CLIENTS && users[h] != 0 && h != i; h++)
+                                if (strstr(message, "/e") != NULL)
                                 {
-                                    snprintf(users[h]->fr, MAX, "%s has left the chat\n", users[i]->username);
-                                    users[h]->friptr = users[h]->fr;
-                                }
-                                free(users[i]);
-                                users[i] = 0;
-                            }
-                            else
-                            {
-                                for (int h = 0; h < MAX_CLIENTS && users[h] != 0 && h != i; h++)
-                                {
-                                    snprintf(users[h]->fr, MAX, "%s:%s", users[i]->username, users[i]->to);
-                                    users[h]->friptr = users[h]->fr;
-                                }
-                                users[i]->toiptr = users[i]->to;
-                                // if fr buffer is not empty, will be overwritten
-                            }
-                        }
+                                    connectedClients--;
+                                    close(users[i]->socket);
 
-                        else if (n < 0)
-                        {
-                            if (errno != EWOULDBLOCK)
-                                perror("read error on socket");
+                                    for (int h = 0; h < MAX_CLIENTS && users[h] != 0 && h != i; h++)
+                                    {
+                                        snprintf(users[h]->fr, MAX, "%s has left the chat\n", users[i]->username);
+                                        users[h]->friptr = users[h]->fr;
+                                    }
+                                    free(users[i]);
+                                    users[i] = 0;
+                                }
+                                else
+                                {
+                                    for (int h = 0; h < MAX_CLIENTS && users[h] != 0 && h != i; h++)
+                                    {
+                                        snprintf(users[h]->fr, MAX, "%s:%s", users[i]->username, users[i]->to);
+                                        users[h]->friptr = users[h]->fr;
+                                    }
+                                    users[i]->toiptr = users[i]->to;
+                                    // if fr buffer is not empty, will be overwritten
+                                }
+                            }
+
+                            else if (n < 0)
+                            {
+                                if (errno != EWOULDBLOCK)
+                                    perror("read error on socket");
+                            }
                         }
                     }
                 }
             }
-                int index;
-                for (index = 0; index < MAX_CLIENTS; index++)
+            int index;
+            for (index = 0; index < MAX_CLIENTS; index++)
+            {
+                if (users[index] == 0)
                 {
-                    if (users[index] == 0)
-                    {
-                        fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                        struct User *newUser = calloc(sizeof(struct User), 1);
-                        newUser->toiptr = newUser->to; /* initialize buffer pointers */
-                        newUser->friptr = &(newUser->fr[MAX]);
-                        bzero(newUser->username, MAX);
-                        // strncpy(newUser->username, newUser->fr, MAX);
-                        newUser->socket = newsockfd;
-                        users[index] = newUser;
-                        connectedClients++;
-                    }
 
-                    printf("%d\n", connectedClients);
-
-                    if (index == MAX_CLIENTS)
-                    {
-                        fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                        snprintf(users[index]->to, MAX, "%s", "There are too many clients connected\n");
-                        close(newsockfd);
-                        break;
-                    }
-
-                    if (connectedClients == 1)
-                    {
-                        fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                        snprintf(users[index]->fr, MAX, "%s", "You are the first user to join the chat!\n");
-                    }
-                    else
-                    {
-                        fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-
-                        for (int i = 0; i < MAX_CLIENTS && i != index && users[i] != 0; i++)
-                        {
-                            snprintf(users[i]->fr, MAX, "%s has joined the chat\n", users[index]->username); // FIXME
-                        }
-                    }
+                    struct User *newUser = calloc(sizeof(struct User), 1);
+                    newUser->toiptr = newUser->to; /* initialize buffer pointers */
+                    newUser->friptr = &(newUser->fr[MAX]);
+                    bzero(newUser->username, MAX);
+                    newUser->socket = newsockfd;
+                    users[index] = newUser;
+                    connectedClients++;
                 }
 
-                // else if (n == 0)
-                // {
-                //     printf("client closed socket\n");
-                //     close(users[i]->socket);
-                //     free(users[i]);
-                //     users[i] = 0;
-                // }
+                printf("%d\n", connectedClients);
 
-                for (int i = 0; i < MAX_CLIENTS; i++)
+                if (index == MAX_CLIENTS)
                 {
-                    if (users[i] != 0 && FD_ISSET(users[i]->socket, &writeset))
+
+                    snprintf(users[index]->to, MAX, "%s", "There are too many clients connected\n");
+                    close(newsockfd);
+                    break;
+                }
+
+                if (connectedClients == 1)
+                {
+
+                    snprintf(users[index]->fr, MAX, "%s", "You are the first user to join the chat!\n");
+                }
+                else
+                {
+
+                    for (int i = 0; i < MAX_CLIENTS && i != index && users[i] != 0; i++)
                     {
-                        if ((n = write(users[i]->socket, users[i]->friptr, &(users[i]->fr[MAX]) - (users[i]->friptr))) > 0)
-                        {
-                            fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-                            users[i]->friptr += n;
-                            if (users[i]->friptr == &(users[i]->fr[MAX]))
-                            {
-                                printf("Written: %s\n", users[i]->fr);
-                            }
-                        }
-                        // else if (n == 0)
-                        // {
-                        //     printf("client closed socket\n");
-                        //     close(users[i]->socket);
-                        //     free(users[i]);
-                        //     users[i] = 0;
-                        // }
-                        else if (n < 0)
-                        {
-                            if (errno != EWOULDBLOCK)
-                                perror("write error on socket");
-                        }
+                        snprintf(users[i]->fr, MAX, "%s has joined the chat\n", users[index]->username); // FIXME
                     }
                 }
-            
+            }
+            for (int i = 0; i < MAX_CLIENTS; i++)
+            {
+                if (users[i] != 0 && FD_ISSET(users[i]->socket, &writeset))
+                {
+                    if ((n = write(users[i]->socket, users[i]->friptr, &(users[i]->fr[MAX]) - (users[i]->friptr))) > 0)
+                    {
+
+                        users[i]->friptr += n;
+                        if (users[i]->friptr == &(users[i]->fr[MAX]))
+                        {
+                            printf("Written: %s\n", users[i]->fr);
+                        }
+                    }
+                    else if (n < 0)
+                    {
+                        if (errno != EWOULDBLOCK)
+                            perror("write error on socket");
+                    }
+                }
+            }
         }
     }
 }
