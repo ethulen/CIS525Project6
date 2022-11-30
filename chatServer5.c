@@ -54,8 +54,7 @@ int main(int argc, char **argv)
     SSL *ssl;
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    // TODO: Check SSLv2 or SSLv23
-    method = SSLv23_server_method();
+    method = TLS_server_method();
     ctx = SSL_CTX_new(method);
 
     // Load Certificate and Private Key Files
@@ -112,18 +111,18 @@ int main(int argc, char **argv)
                     exit(1);
                 }
 
+                val = fcntl(newsockfd, F_GETFL, 0);
+                fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
+
                 // Create SSL Session State based on context & SSL_accept
                 ssl = SSL_new(ctx);
                 SSL_set_fd(ssl, newsockfd);
-                if (SSL_accept(ssl) < 0)
+                if (SSL_accept(ssl) < 0) //maybe <= 0, check man page
                 {
                     ERR_print_errors_fp(stderr);
                 }
                 else
                 {
-                    val = fcntl(newsockfd, F_GETFL, 0);
-                    fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
-
                     /* Read the username from the client. */
                     for (int i = 0; i < MAX_CLIENTS; i++)
                     {
@@ -191,6 +190,7 @@ int main(int argc, char **argv)
 
                             else if (n < 0)
                             {
+                                // SSL_get_error(const SSL *ssl, int ret)
                                 if (errno != EWOULDBLOCK)
                                     perror("read error on socket");
                             }
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
                 {
 
                     snprintf(users[index]->to, MAX, "%s", "There are too many clients connected\n");
-                    close(newsockfd);
+                    SSL_shutdown(users[index]->ssl);
                     break;
                 }
 

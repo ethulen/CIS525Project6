@@ -29,11 +29,10 @@ int main()
     unsigned int servlen; /* length of server addr*/
 
     // Initializes Client SSL State
-    SSL_METHOD *method;
     SSL_CTX *ctx;
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    method = SSLv23_client_method();
+    const SSL_METHOD *method = TLS_client_method();
     ctx = SSL_CTX_new(method);
 
     // standard input (descriptor 0), and pipe input descriptor.
@@ -54,8 +53,6 @@ int main()
 
     if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        if (errno != EINPROGRESS)
-            exit(1);
         perror("client: can't connect to server");
         exit(1);
     }
