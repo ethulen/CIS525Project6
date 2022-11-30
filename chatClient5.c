@@ -33,7 +33,7 @@ int main()
     SSL_CTX *ctx;
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    method = SSLv2_client_method();
+    method = SSLv23_client_method();
     ctx = SSL_CTX_new(method);
 
     // standard input (descriptor 0), and pipe input descriptor.
@@ -62,8 +62,8 @@ int main()
 
     // Establishes SSL protocol and create encryption link
     SSL *ssl = SSL_new(ctx);
-    SSL_set_fd(ssl, socketfd);
-    if (SSL_connect(ssl) == -1)
+    SSL_set_fd(ssl, sockfd);
+    if (SSL_connect(ssl) < 0)
     {
         ERR_print_errors_fp(stderr);
     }

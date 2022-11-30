@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     // TODO: Check SSLv2 or SSLv23
-    method = SSLv2_server_method();
+    method = SSLv23_server_method();
     ctx = SSL_CTX_new(method);
 
     // Load Certificate and Private Key Files
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
                 // Create SSL Session State based on context & SSL_accept
                 ssl = SSL_new(ctx);
                 SSL_set_fd(ssl, newsockfd);
-                if (SSL_accept(ssl) == FAIL)
+                if (SSL_accept(ssl) < 0)
                 {
                     ERR_print_errors_fp(stderr);
                 }
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
             {
                 if (users[i] != 0 && FD_ISSET(users[i]->socket, &writeset))
                 {
-                    if ((n = SSL_write(users[i]->ssl, users[i]->friptr, &(users[i]->fr[MAX]) - (users[i]->friptr))) > 0)
+                    if (n = (SSL_write(users[i]->ssl, users[i]->friptr, (&(users[i]->fr[MAX]) - (users[i]->friptr))) > 0))
                     {
 
                         users[i]->friptr += n;
