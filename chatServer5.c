@@ -22,6 +22,7 @@
 typedef struct User
 {
     char username[MAX];
+    SSL *ssl;
     int socket;
     char to[MAX], fr[MAX];
     char *toiptr, *friptr;
@@ -50,10 +51,11 @@ int main(int argc, char **argv)
     // Initializes Server SSL State
     SSL_METHOD *method;
     SSL_CTX *ctx;
+    SSL *ssl;
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     // TODO: Check SSLv2 or SSLv23
-    method = SSLv23_server_method();
+    method = SSLv2_server_method();
     ctx = SSL_CTX_new(method);
 
     // Load Certificate and Private Key Files
@@ -111,7 +113,7 @@ int main(int argc, char **argv)
                 }
 
                 // Create SSL Session State based on context & SSL_accept
-                SSL *ssl = SSL_new(ctx);
+                ssl = SSL_new(ctx);
                 SSL_set_fd(ssl, newsockfd);
                 if (SSL_accept(ssl) == FAIL)
                 {
@@ -127,7 +129,7 @@ int main(int argc, char **argv)
                     {
                         if (users[i] != 0 && FD_ISSET(users[i]->socket, &readset))
                         {
-                            if ((n = read(users[i]->socket, users[i]->toiptr, &(users[i]->to[MAX]) - users[i]->toiptr)) > 0)
+                            if ((n = SSL_read(ssl, users[i]->socket, users[i]->toiptr, &(users[i]->to[MAX]) - users[i]->toiptr)) > 0)
                             {
                                 users[i]->toiptr += n;
                                 if (users[i]->toiptr == &(users[i]->to[MAX]))
@@ -240,7 +242,7 @@ int main(int argc, char **argv)
             {
                 if (users[i] != 0 && FD_ISSET(users[i]->socket, &writeset))
                 {
-                    if ((n = write(users[i]->socket, users[i]->friptr, &(users[i]->fr[MAX]) - (users[i]->friptr))) > 0)
+                    if ((n = SSL_write(ssl, users[i]->socket, users[i]->friptr, &(users[i]->fr[MAX]) - (users[i]->friptr))) > 0)
                     {
 
                         users[i]->friptr += n;
