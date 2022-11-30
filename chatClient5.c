@@ -62,7 +62,7 @@ int main()
 
     // Establishes SSL protocol and create encryption link
     SSL *ssl = SSL_new(ctx);
-    SSL_set_fd(ssl, sd);
+    SSL_set_fd(ssl, sockfd);
     if (SSL_connect(ssl) == -1)
     {
         ERR_print_errors_fp(stderr);
