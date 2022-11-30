@@ -125,7 +125,7 @@ int main(int argc, char **argv)
                     struct Server newServer;
 
                     strcpy(newServer.ip, inet_ntoa(cli_addr.sin_addr));
-                    if (sscanf(s, "%s %d", &newServer.topic, &newServer.port) != 2)
+                    if (sscanf(s, "%s %d", newServer.topic, &newServer.port) != 2)
                     {
                         printf("Issue reading message from server.\n");
                     }

@@ -43,14 +43,15 @@ int main(int argc, char **argv)
     int maxfdp1, val, stdineof;
     ssize_t n, nwritten;
     fd_set readset, writeset;
-
+    unsigned short input;
     stdineof = 0;
     signal(SIGINT, sighandler);
 
     if (argc == 3)
     {
         // Checks that the port is valid
-        if ((sscanf(argv[2], "%d") != 1) || (atoi(argv[2]) > 65535 || atoi(argv[2]) < 1024))
+        sscanf((argv[2]), " %hd ", &input);
+        if ((input != 1) || (atoi(argv[2]) > 65535 || atoi(argv[2]) < 1024))
         {
             printf("Please choose a valid port number.\n");
             exit(0);
