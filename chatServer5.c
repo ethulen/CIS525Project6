@@ -129,7 +129,7 @@ int main(int argc, char **argv)
                     {
                         if (users[i] != 0 && FD_ISSET(users[i]->socket, &readset))
                         {
-                            if ((n = SSL_read(ssl, users[i]->toiptr, (&(users[i]->to[MAX]) - users[i]->toiptr)) > 0))
+                            if ((n = SSL_read(users[i]->ssl, users[i]->toiptr, (&(users[i]->to[MAX]) - users[i]->toiptr)) > 0))
                             {
                                 users[i]->toiptr += n;
                                 if (users[i]->toiptr == &(users[i]->to[MAX]))
@@ -150,7 +150,6 @@ int main(int argc, char **argv)
 
                                         if (dupName)
                                         {
-
                                             snprintf(users[i]->fr, MAX, "%s", "Sorry, that user already exists. Please restart and try a different username!\n");
                                             connectedClients--;
                                             close(users[i]->socket);
@@ -210,6 +209,7 @@ int main(int argc, char **argv)
                     newUser->friptr = &(newUser->fr[MAX]);
                     bzero(newUser->username, MAX);
                     newUser->socket = newsockfd;
+                    newUser->ssl = ssl;
                     users[index] = newUser;
                     connectedClients++;
                 }
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
             {
                 if (users[i] != 0 && FD_ISSET(users[i]->socket, &writeset))
                 {
-                    if ((n = SSL_read(ssl, users[i]->toiptr, (&(users[i]->to[MAX]) - users[i]->toiptr)) > 0))
+                    if ((n = SSL_write(users[i]->ssl, users[i]->friptr, &(users[i]->fr[MAX]) - (users[i]->friptr))) > 0)
                     {
 
                         users[i]->friptr += n;
