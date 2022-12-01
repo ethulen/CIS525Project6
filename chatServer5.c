@@ -49,12 +49,11 @@ int main(int argc, char **argv)
 
     SSL_library_init();
     // Initializes Server SSL State
-    SSL_METHOD *method;
     SSL_CTX *ctx;
     SSL *ssl;
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    method = TLS_server_method();
+    const SSL_METHOD *method = TLS_client_method();
     ctx = SSL_CTX_new(method);
 
     // Load Certificate and Private Key Files

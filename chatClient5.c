@@ -65,6 +65,29 @@ int main()
         ERR_print_errors_fp(stderr);
     }
 
+    // Gets server's certificate
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if(!cert)
+    {
+        perror("SSL_get_peer_certificate() failed\n");
+        exit(1);
+    }
+
+    // Gets certificate subject name
+    char *tmp;
+    if(tmp = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0))
+    {
+        OPENSSL_free(tmp);
+    }
+
+    // Gets certificate issuer
+    // if(tmp = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0))
+    // {
+    //     OPENSSL_free(tmp);
+    // }
+    X509_free(cert);
+
+
     printf("Please enter your username here: \n");
 
     if (scanf("%s", username) != 1)
@@ -106,7 +129,6 @@ int main()
             }
             if (FD_ISSET(sockfd, &readset))
             {
-
                 char response[MAX] = {0}; /* server response */
                 if (SSL_read(ssl, response, MAX) <= 0)
                 {
