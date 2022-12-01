@@ -64,23 +64,19 @@ int main(int argc, char **argv)
     }
 
     SSL_library_init();
-    // Initializes Server SSL State
-    SSL_CTX *ctx;
-    SSL *ssl;
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    const SSL_METHOD *method = TLS_client_method();
-    ctx = SSL_CTX_new(method);
+    // Initializes Server SSL State
+    SSL_CTX *ctx = SSL_CTX_new(TLS_server_method());
+    SSL *ssl;
 
     // Load Certificate and Private Key Files
-    // TODO: Create CertFile based on links in the assignment page
-    // SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM);
-    // TODO: Create KeyFile based on links in the assignment page
-    // SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM);
-    // if(!(SSL_CTX_check_private_key(ctx)))
-    // {
-    //     fprintf(stderr, "Key & certificate don't match");
-    // }
+    if(!SSL_CTX_use_certificate_file(ctx, "cert.pem", SSL_FILETYPE_PEM) ||
+    !SSL_CTX_use_PrivateKey_file(ctx, "key.pem", SSL_FILETYPE_PEM))
+    {
+        fprintf(stderr, "SSL_ctx_use_certificate_file() failed.\n");
+        exit(1);
+    }
 
     hostSockfd = 0;
     if ((hostSockfd = startServer()) < 1)
