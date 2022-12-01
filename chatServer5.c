@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     int connectedClients = 0, maxfd = 0;
     char message[MAX];
     int j, ret;
-    int maxfdp1, val, stdineof;
+    int maxfdp1, val, stdineof, port;
     ssize_t n, nwritten;
     fd_set readset, writeset;
     stdineof = 0;
@@ -65,6 +65,23 @@ int main(int argc, char **argv)
     // {
     //     fprintf(stderr, "Key & certificate don't match");
     // }
+
+    if (argc == 3)
+    {
+        // Checks that the port is valid
+        if ((sscanf(argv[2], "%d") != 1) || (atoi(argv[2]) > 65535 || atoi(argv[2]) < 1024))
+        {
+            printf("Please choose a valid port number.\n");
+            exit(0);
+        }
+        port = atoi(argv[2]);
+        snprintf(topic, MAX, "%s", argv[1]);
+    }
+    else
+    {
+        printf("Please try to reinput your information as the following: \"<topic>\" <port number>. Thank you.\n");
+        exit(0);
+    }
 
     hostSockfd = 0;
     if ((hostSockfd = startServer()) < 1)
@@ -116,7 +133,7 @@ int main(int argc, char **argv)
                 // Create SSL Session State based on context & SSL_accept
                 ssl = SSL_new(ctx);
                 SSL_set_fd(ssl, newsockfd);
-                if (SSL_accept(ssl) < 0) //maybe <= 0, check man page
+                if (SSL_accept(ssl) < 0) // maybe <= 0, check man page
                 {
                     ERR_print_errors_fp(stderr);
                 }
