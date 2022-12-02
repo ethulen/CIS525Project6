@@ -65,12 +65,22 @@ int main()
     serv_addr.sin_family      = AF_INET;
     serv_addr.sin_addr.s_addr = options[choice].ip;
     serv_addr.sin_port = options[choice].port;
-    SSL_CTX *ctx;
+   
+    SSL_library_init();
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    const SSL_METHOD *method = TLS_client_method();
-    ctx = SSL_CTX_new(method);
-
+    SSL_CTX *ctx = SSL_CTX_new(TLS_client_method());
+    if(!ctx){
+        fprintf(stderr, "SSL_CTX_new() failed./n");
+        exit(1);
+    }
+    /*if (!SSL_set_tlsext_host_name(ssl, hostname)){
+        fprintf(stderr,"SSL_set_tlsext_host_name() failed. \n");
+        ERR_print_errors_fp(stderr);
+        exit(1);
+    }
+    */
+    
     //serv_addr.sin_addr.s_addr = inet_addr(SERV_HOST_ADDR);
     //serv_addr.sin_port        = htons(23621);
     
@@ -100,31 +110,20 @@ int main()
     
     SSL *ssl = SSL_new(ctx);
     SSL_set_fd(ssl, sockfd);
-    if (SSL_connect(ssl) < 0)
-    {
+    if(SSL_connect(ssl) == -1){
+        fprintf(stderr, "SSL_connect() failed.\n");
         ERR_print_errors_fp(stderr);
-    }
-    X509 *cert = SSL_get_peer_certificate(ssl);
-    if(!cert)
-    {
-        perror("SSL_get_peer_certificate() failed\n");
         exit(1);
     }
-
-    // Gets certificate subject name
-    char *tmp;
-    if(tmp = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0))
-    {
-        OPENSSL_free(tmp);
+    if (!ctx){
+        fprintf(stderr, "SSL_new() failed.\n");
+        exit(1);
     }
-    
     // Gets certificate issuer
     // if(tmp = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0))
     // {
     //     OPENSSL_free(tmp);
     // }
-    X509_free(cert);
-	SSL_write(ssl, &idmessage, sizeof(message));
     
     // standard input (descriptor 0), and pipe input descriptor.
     for(;;)

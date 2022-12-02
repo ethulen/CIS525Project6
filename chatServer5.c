@@ -53,12 +53,12 @@ int main(int argc, char **argv)
     SSL_library_init();
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-	//ERR_print_errors_fp(stderr);
-	//method = SSLv23_server_method();
-	//ctx = SSL_CTX_new(method);
+	ERR_print_errors_fp(stderr);
+	SSL_METHOD * method = SSLv23_server_method();
+	SSL_CTX * ctx = SSL_CTX_new(method);
 
     // Initializes Server SSL State
-    SSL_CTX *ctx = SSL_CTX_new(TLS_server_method());
+    //SL_CTX *ctx = SSL_CTX_new(TLS_server_method());
     SSL *ssl;
     if(!SSL_CTX_use_certificate_file(ctx, "cert.pem", SSL_FILETYPE_PEM) ||
     !SSL_CTX_use_PrivateKey_file(ctx, "key.pem", SSL_FILETYPE_PEM))
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "SSL_ctx_use_certificate_file() failed.\n");
         exit(1);
     }
-    
+    ssl = SSL_new(ctx);
     curmax = sockfd;
     /* Bind socket to local address */
     memset((char *) &serv_addr, 0, sizeof(serv_addr));
