@@ -141,30 +141,39 @@ int main()
 	// Block until data is available to read or 5 seconds have elapsed.
 
         if ((n=select(sockfd +1,&readset, NULL, NULL,NULL)) > 0){
-	    if (FD_ISSET(sockfd,&readset))
-            {	    
-                memset(&curMessage,0,sizeof(message));
-                SSL_read(ssl, &curMessage, sizeof(message));
-                //add fail check for read
-                if(curMessage.type == 'm'){
-                    curMessage.sender[strlen(curMessage.sender)-1]='\0';
-                    printf("%s: %s",curMessage.sender,curMessage.value);
+            if (FD_ISSET(sockfd,&readset))
+                {	    
+                    memset(&curMessage,0,sizeof(message));
+                    int readcheck = SSL_read(ssl, &curMessage, sizeof(message));
+                    if(readcheck <= 0){
+                        printf("error with write\n");
+                        exit(0);
+                    }
                 }
-            if(curMessage.type == 'n'){
+                    //add fail check for read
+                    if(curMessage.type == 'm'){
+                        curMessage.sender[strlen(curMessage.sender)-1]='\0';
+                        printf("%s: %s",curMessage.sender,curMessage.value);
+                    }
+                if(curMessage.type == 'n'){
 
-                curMessage.value[strlen(curMessage.value)-1]='\0';
-                printf("%s has joined the chat!\n",curMessage.value);
+                    curMessage.value[strlen(curMessage.value)-1]='\0';
+                    printf("%s has joined the chat!\n",curMessage.value);
+                }
+                // printf("Read so far: "); puts(msg); printf("\n");
             }
-               // printf("Read so far: "); puts(msg); printf("\n");
-	    }
         if(FD_ISSET(STDIN_FILENO , &readset)){
             message messageToSend;
             memset(&messageToSend,0,sizeof(message));
             parseOutput(&messageToSend);
-            SSL_write(ssl, &messageToSend, sizeof(message));
+            int writecheck=SSL_write(ssl, &messageToSend, sizeof(message));
+            if(writecheck <= 0){
+                printf("error with write\n");
+                exit(0);
+            }
             //add error check
 	    }
-      }
+      
         
     }
 }
