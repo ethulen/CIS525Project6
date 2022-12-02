@@ -12,8 +12,8 @@
 #define MAX_THREADS 5
 #define MAX_SERVERS 5
 
-#define SERV_TCP_PORT 53337
-#define CLI_TCP_PORT 28686
+#define SERV_TCP_PORT 53338
+#define CLI_TCP_PORT 28688
 
 typedef struct message{ 
 	char type;
