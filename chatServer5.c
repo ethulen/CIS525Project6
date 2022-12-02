@@ -49,9 +49,14 @@ int main(int argc, char **argv)
         perror("server: can't open stream socket");
         exit(1);
     }
+	//SSL_METHOD *method;
     SSL_library_init();
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
+	//ERR_print_errors_fp(stderr);
+	//method = SSLv23_server_method();
+	//ctx = SSL_CTX_new(method);
+
     // Initializes Server SSL State
     SSL_CTX *ctx = SSL_CTX_new(TLS_server_method());
     SSL *ssl;
@@ -127,19 +132,20 @@ int main(int argc, char **argv)
 	   if( FD_ISSET(sockfd,&readset)){
 		
         	clilen = sizeof(cli_addr);
-        	newsockfd = accept(sockfd, NULL,NULL);
-            
+        	newsockfd = accept(sockfd, (struct sockaddr*)&clilen,&clilen);
+            val = fcntl(newsockfd, F_GETFL, 0);
+            fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
         	if (newsockfd < 0) {
             	   perror("server: accept error");
            	   exit(1);
 		    }
-        val = fcntl(newsockfd, F_GETFL, 0);
-        fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
+        
         ssl = SSL_new(ctx);
         SSL_set_fd(ssl, newsockfd);
         if (SSL_accept(ssl) < 0) // maybe <= 0, check man page
         {
             ERR_print_errors_fp(stderr);
+			continue;
         }
 		//FD_SET(newsockfd, &readset);
 		if(curmax < newsockfd){

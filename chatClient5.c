@@ -97,15 +97,13 @@ int main()
     idmessage.type = 'n';
     idmessage.length = strlen(name);    
     memcpy(idmessage.value,name,40);
-    write(sockfd, &idmessage, sizeof(message));
+    
     SSL *ssl = SSL_new(ctx);
     SSL_set_fd(ssl, sockfd);
     if (SSL_connect(ssl) < 0)
     {
         ERR_print_errors_fp(stderr);
     }
-
-    // Gets server's certificate
     X509 *cert = SSL_get_peer_certificate(ssl);
     if(!cert)
     {
@@ -119,14 +117,14 @@ int main()
     {
         OPENSSL_free(tmp);
     }
-
+    
     // Gets certificate issuer
     // if(tmp = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0))
     // {
     //     OPENSSL_free(tmp);
     // }
     X509_free(cert);
-	
+	SSL_write(ssl, &idmessage, sizeof(message));
     
     // standard input (descriptor 0), and pipe input descriptor.
     for(;;)
