@@ -12,7 +12,7 @@
 #define MAX_THREADS 5
 #define MAX_SERVERS 5
 
-#define SERV_TCP_PORT 53661
+#define SERV_TCP_PORT 53673
 #define CLI_TCP_PORT 28652
 
 typedef struct message{ 

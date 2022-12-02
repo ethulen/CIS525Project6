@@ -123,7 +123,12 @@ int main()
         ERR_print_errors_fp(stderr);
         exit(1);
     }
-    
+    //SSLwrite(sockfd, &idmessage, sizeof(message));
+    int writecheck1=SSL_write(ssl, &idmessage, sizeof(message));
+    if(writecheck1 <= 0){
+        printf("error with write\n");
+        exit(0);
+    }
     // Gets certificate issuer
     // if(tmp = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0))
     // {

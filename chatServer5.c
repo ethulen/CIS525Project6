@@ -198,7 +198,7 @@ int main(int argc, char **argv)
        				
 				memcpy(curmessage.sender,people[i].name, sizeof(curmessage.sender));
 				//printf("%s\n",curmessage.sender);
-
+				printf("type:%c\n",curmessage.type);
 				//printf("%s\n",people[i].name);
 				if(curmessage.type == 'n'){
 				//	snprintf(curmessage.value,MAX,"%s has joined the chat!",curmessage.value);
