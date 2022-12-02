@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
 	ERR_print_errors_fp(stderr);
-	SSL_METHOD * method = SSLv23_server_method();
+	const SSL_METHOD * method = TLS_server_method();
 	SSL_CTX * ctx = SSL_CTX_new(method);
 
     // Initializes Server SSL State
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     ssl = SSL_new(ctx);
-    curmax = sockfd;
+    
     /* Bind socket to local address */
     memset((char *) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family      = AF_INET;
@@ -108,22 +108,23 @@ int main(int argc, char **argv)
   
     //printf("sockcreated %d\n", sockfd);	
     listen(sockfd, 5);
-
+	curmax = sockfd;
     for ( ; ; ) {
-	    
+	//curmax = sockfd;
    	 //	printf("2\n");	
 	FD_ZERO(&readset);
 	//FD_SET(STDIN_FILENO, &readset);
 	FD_SET(sockfd, &readset);
 	//printf("3\n");	
+	printf("curUsers: %d\n",curUsers);
 	
 	for(int i = 0 ; i < curUsers; i++){
 		
 		//printf("3\n");	
-		person	tempperson = people[i];
-		//printf("socket%d\n",people[i].sock);	
+		//person	tempperson = people[i];
+		printf("socket%d\n",people[i].sock);	
 		FD_SET(people[i].sock,&readset);
-
+		printf("%d\n",i);
 	}
 	
 	//printf("4\n");	
@@ -133,19 +134,25 @@ int main(int argc, char **argv)
 		
         	clilen = sizeof(cli_addr);
         	newsockfd = accept(sockfd, (struct sockaddr*)&clilen,&clilen);
-            val = fcntl(newsockfd, F_GETFL, 0);
-            fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
         	if (newsockfd < 0) {
             	   perror("server: accept error");
            	   exit(1);
 		    }
+			val = fcntl(newsockfd, F_GETFL, 0);
+            fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
         
         ssl = SSL_new(ctx);
         SSL_set_fd(ssl, newsockfd);
-        if (SSL_accept(ssl) < 0) // maybe <= 0, check man page
+		int acceptcheck;
+        if ((acceptcheck = SSL_accept(ssl)) < 0) // maybe <= 0, check man page
         {
+			long checval = SSL_get_error(ssl,acceptcheck);
             ERR_print_errors_fp(stderr);
-			continue;
+			if(checval != SSL_ERROR_WANT_READ && checval != SSL_ERROR_WANT_WRITE ){
+				close(newsockfd);
+				continue;
+			}
+			
         }
 		//FD_SET(newsockfd, &readset);
 		if(curmax < newsockfd){
@@ -164,17 +171,31 @@ int main(int argc, char **argv)
 		people[curUsers].sock = newsockfd;
         people[curUsers].ssl = ssl;
 		curUsers ++;
-		
 	//	close(sockfd);
 	//	open(sockfd);
 	   }
-	   else{
+	   
 		//printf("5\n");			
 		for(int i = 0 ; i < curUsers; i++){
 			//person	tempperson = people[i];
 			if(FD_ISSET((people[i].sock),&readset)){
 				message curmessage;
-       				SSL_read((people[i].ssl), &curmessage, sizeof(message));
+				int acceptcheck;
+				if ((acceptcheck = SSL_read((people[i].ssl), &curmessage, sizeof(message))) < 0) // maybe <= 0, check man page
+				{
+					long checval = SSL_get_error(ssl,acceptcheck);
+					ERR_print_errors_fp(stderr);
+					if(checval != SSL_ERROR_WANT_READ && checval != SSL_ERROR_WANT_WRITE ){
+					
+						close(people[i].sock);
+						SSL_free(people[i].ssl);
+						people[i].sock =0;
+						people[i].ssl = 0;
+						continue;
+					}
+					
+				}
+       				
 				memcpy(curmessage.sender,people[i].name, sizeof(curmessage.sender));
 				//printf("%s\n",curmessage.sender);
 
@@ -217,7 +238,7 @@ int main(int argc, char **argv)
 			}
 		}
 	   }
-	}
+	
 	else{
 		perror("issue with select");
 		exit(1);

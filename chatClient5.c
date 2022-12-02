@@ -102,23 +102,28 @@ int main()
     
     char name [MAX];
     printf("please enter a nickname\n");
-    read( STDIN_FILENO,&name,MAX);
+    scanf( " %s",name);
     message idmessage;
     idmessage.type = 'n';
+    //bug for concat
     idmessage.length = strlen(name);    
     memcpy(idmessage.value,name,40);
-    
+    if (!ctx){
+        fprintf(stderr, "SSL_ctx_new() failed.\n");
+        exit(1);
+    }
     SSL *ssl = SSL_new(ctx);
+    if (!ssl){
+        fprintf(stderr, "SSL_new() failed.\n");
+        exit(1);
+    }
     SSL_set_fd(ssl, sockfd);
     if(SSL_connect(ssl) == -1){
         fprintf(stderr, "SSL_connect() failed.\n");
         ERR_print_errors_fp(stderr);
         exit(1);
     }
-    if (!ctx){
-        fprintf(stderr, "SSL_new() failed.\n");
-        exit(1);
-    }
+    
     // Gets certificate issuer
     // if(tmp = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0))
     // {
@@ -138,29 +143,29 @@ int main()
         if ((n=select(sockfd +1,&readset, NULL, NULL,NULL)) > 0){
 	    if (FD_ISSET(sockfd,&readset))
             {	    
-		memset(&curMessage,0,sizeof(message));
-		SSL_read(ssl, &curMessage, sizeof(message));
-		if(curMessage.type == 'm'){
-			curMessage.sender[strlen(curMessage.sender)-1]='\0';
-			printf("%s: %s",curMessage.sender,curMessage.value);
-		}
-		if(curMessage.type == 'n'){
+                memset(&curMessage,0,sizeof(message));
+                SSL_read(ssl, &curMessage, sizeof(message));
+                //add fail check for read
+                if(curMessage.type == 'm'){
+                    curMessage.sender[strlen(curMessage.sender)-1]='\0';
+                    printf("%s: %s",curMessage.sender,curMessage.value);
+                }
+            if(curMessage.type == 'n'){
 
-			curMessage.value[strlen(curMessage.value)-1]='\0';
-			printf("%s has joined the chat!\n",curMessage.value);
-		}
+                curMessage.value[strlen(curMessage.value)-1]='\0';
+                printf("%s has joined the chat!\n",curMessage.value);
+            }
                // printf("Read so far: "); puts(msg); printf("\n");
-	    }if(FD_ISSET(STDIN_FILENO , &readset)){
-		message messageToSend;
-		memset(&messageToSend,0,sizeof(message));
-		parseOutput(&messageToSend);
-        	SSL_write(ssl, &messageToSend, sizeof(message));
 	    }
-        }
-        else
-        {
-            printf("Type faster dude.\n");
-        }
+        if(FD_ISSET(STDIN_FILENO , &readset)){
+            message messageToSend;
+            memset(&messageToSend,0,sizeof(message));
+            parseOutput(&messageToSend);
+            SSL_write(ssl, &messageToSend, sizeof(message));
+            //add error check
+	    }
+      }
+        
     }
 }
 void parseOutput(message* curmessage ){
