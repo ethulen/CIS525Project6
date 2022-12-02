@@ -15,13 +15,18 @@
 #define SERV_TCP_PORT 53337
 #define CLI_TCP_PORT 28686
 
+typedef struct message{ 
+	char type;
+	int length;
+	char value[100];
+	char sender[100];
+	}message;
 typedef struct server{
 	int active;
-	char topic[MAX];
+	char topic[100];
 	unsigned int ip;
 	unsigned short port;
 	
 }server;
-
 /* Change the following to be your host addr: 129.130.10.43 for viper and 129.130.10.39 for cougar */
 #define SERV_HOST_ADDR "129.130.10.43"
