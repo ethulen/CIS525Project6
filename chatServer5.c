@@ -13,7 +13,11 @@
 #include <string.h>
 #include <strings.h>
 #include "inet.h"
-
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 typedef struct person{
 	char name[100];
 	int enrolled;

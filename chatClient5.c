@@ -10,6 +10,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "inet.h"
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #define MAX 100
 
@@ -60,6 +65,11 @@ int main()
     serv_addr.sin_family      = AF_INET;
     serv_addr.sin_addr.s_addr = options[choice].ip;
     serv_addr.sin_port = options[choice].port;
+    SSL_CTX *ctx;
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    const SSL_METHOD *method = TLS_client_method();
+    ctx = SSL_CTX_new(method);
 
     //serv_addr.sin_addr.s_addr = inet_addr(SERV_HOST_ADDR);
     //serv_addr.sin_port        = htons(23621);
@@ -88,7 +98,34 @@ int main()
     idmessage.length = strlen(name);    
     memcpy(idmessage.value,name,40);
     write(sockfd, &idmessage, sizeof(message));
+    SSL *ssl = SSL_new(ctx);
+    SSL_set_fd(ssl, sockfd);
+    if (SSL_connect(ssl) < 0)
+    {
+        ERR_print_errors_fp(stderr);
+    }
 
+    // Gets server's certificate
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if(!cert)
+    {
+        perror("SSL_get_peer_certificate() failed\n");
+        exit(1);
+    }
+
+    // Gets certificate subject name
+    char *tmp;
+    if(tmp = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0))
+    {
+        OPENSSL_free(tmp);
+    }
+
+    // Gets certificate issuer
+    // if(tmp = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0))
+    // {
+    //     OPENSSL_free(tmp);
+    // }
+    X509_free(cert);
 	
     
     // standard input (descriptor 0), and pipe input descriptor.
@@ -105,7 +142,7 @@ int main()
 	    if (FD_ISSET(sockfd,&readset))
             {	    
 		memset(&curMessage,0,sizeof(message));
-		read(sockfd, &curMessage, sizeof(message));
+		SSL_read(ssl, &curMessage, sizeof(message));
 		if(curMessage.type == 'm'){
 			curMessage.sender[strlen(curMessage.sender)-1]='\0';
 			printf("%s: %s",curMessage.sender,curMessage.value);
@@ -120,7 +157,7 @@ int main()
 		message messageToSend;
 		memset(&messageToSend,0,sizeof(message));
 		parseOutput(&messageToSend);
-        	write(sockfd, &messageToSend, sizeof(message));
+        	SSL_write(ssl, &messageToSend, sizeof(message));
 	    }
         }
         else
