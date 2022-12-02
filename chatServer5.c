@@ -198,7 +198,7 @@ int main(int argc, char **argv)
        				
 				memcpy(curmessage.sender,people[i].name, sizeof(curmessage.sender));
 				//printf("%s\n",curmessage.sender);
-				printf("type:%c\n",curmessage.type);
+				
 				//printf("%s\n",people[i].name);
 				if(curmessage.type == 'n'){
 				//	snprintf(curmessage.value,MAX,"%s has joined the chat!",curmessage.value);
@@ -216,7 +216,8 @@ int main(int argc, char **argv)
 						
 						for(int j = 0 ; j < curUsers; j++){	
 							//person	tempperson3 = people[i];
-							if(&people[i] != &people[j] && people[j].enrolled == 1){
+							//if condition changed
+							if(/*&people[i] != &people[j] && */people[j].enrolled == 1){
        								 SSL_write(people[j].ssl, &curmessage, sizeof(message));
 
 							

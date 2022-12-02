@@ -124,6 +124,7 @@ int main()
         exit(1);
     }
     //SSLwrite(sockfd, &idmessage, sizeof(message));
+    printf("type:%c\n",idmessage.type);
     int writecheck1=SSL_write(ssl, &idmessage, sizeof(message));
     if(writecheck1 <= 0){
         printf("error with write\n");
