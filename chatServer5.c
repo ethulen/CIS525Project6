@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 	   if( FD_ISSET(sockfd,&readset)){
 		
         	clilen = sizeof(cli_addr);
-        	newsockfd = accept(sockfd, (struct sockaddr*)&clilen,&clilen);
+        	newsockfd = accept(sockfd, NULL, NULL);
         	if (newsockfd < 0) {
             	   perror("server: accept error");
            	   exit(1);
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 						for(int j = 0 ; j < curUsers; j++){	
 							//person	tempperson3 = people[i];
 							//if condition changed
-							if(/*&people[i] != &people[j] && */people[j].enrolled == 1){
+							if(&people[i] != &people[j] && people[j].enrolled == 1){
        								 SSL_write(people[j].ssl, &curmessage, sizeof(message));
 
 							
