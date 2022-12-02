@@ -22,12 +22,13 @@ typedef struct person{
 	char name[100];
 	int enrolled;
 	int sock;
+    SSL *ssl;
 }person;
 int main(int argc, char **argv)
 {
 	
     //printf("1\n");	
-    int                 servfd,sockfd, newsockfd, childpid,n,curmax;
+    int                 servfd,sockfd, newsockfd, childpid,n,curmax,val;
     unsigned int	clilen;
     struct sockaddr_in  cli_addr, serv_addr;
     struct tm           *timeptr;  /* pointer to time structure */
@@ -48,6 +49,19 @@ int main(int argc, char **argv)
         perror("server: can't open stream socket");
         exit(1);
     }
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    // Initializes Server SSL State
+    SSL_CTX *ctx = SSL_CTX_new(TLS_server_method());
+    SSL *ssl;
+    if(!SSL_CTX_use_certificate_file(ctx, "cert.pem", SSL_FILETYPE_PEM) ||
+    !SSL_CTX_use_PrivateKey_file(ctx, "key.pem", SSL_FILETYPE_PEM))
+    {
+        fprintf(stderr, "SSL_ctx_use_certificate_file() failed.\n");
+        exit(1);
+    }
+    
     curmax = sockfd;
     /* Bind socket to local address */
     memset((char *) &serv_addr, 0, sizeof(serv_addr));
@@ -114,11 +128,19 @@ int main(int argc, char **argv)
 		
         	clilen = sizeof(cli_addr);
         	newsockfd = accept(sockfd, NULL,NULL);
-
+            
         	if (newsockfd < 0) {
             	   perror("server: accept error");
            	   exit(1);
-		}
+		    }
+        val = fcntl(newsockfd, F_GETFL, 0);
+        fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
+        ssl = SSL_new(ctx);
+        SSL_set_fd(ssl, newsockfd);
+        if (SSL_accept(ssl) < 0) // maybe <= 0, check man page
+        {
+            ERR_print_errors_fp(stderr);
+        }
 		//FD_SET(newsockfd, &readset);
 		if(curmax < newsockfd){
 			curmax = newsockfd;
@@ -134,6 +156,7 @@ int main(int argc, char **argv)
 		people[curUsers].enrolled = 0;
 		
 		people[curUsers].sock = newsockfd;
+        people[curUsers].ssl = ssl;
 		curUsers ++;
 		
 	//	close(sockfd);
@@ -145,7 +168,7 @@ int main(int argc, char **argv)
 			//person	tempperson = people[i];
 			if(FD_ISSET((people[i].sock),&readset)){
 				message curmessage;
-       				read((people[i].sock), &curmessage, sizeof(message));
+       				SSL_read((people[i].ssl), &curmessage, sizeof(message));
 				memcpy(curmessage.sender,people[i].name, sizeof(curmessage.sender));
 				//printf("%s\n",curmessage.sender);
 
@@ -167,7 +190,7 @@ int main(int argc, char **argv)
 						for(int j = 0 ; j < curUsers; j++){	
 							//person	tempperson3 = people[i];
 							if(&people[i] != &people[j] && people[j].enrolled == 1){
-       								 write(people[j].sock, &curmessage, sizeof(message));
+       								 SSL_write(people[j].ssl, &curmessage, sizeof(message));
 
 							
 							}
@@ -180,7 +203,7 @@ int main(int argc, char **argv)
 						for(int j = 0 ; j < curUsers; j++){	
 							//person	tempperson2 = people[i];
 							if(&people[j] != &people[i] && people[j].enrolled == 1){
-       								 write(people[j].sock, &curmessage, sizeof(message));
+       								 SSL_write(people[j].ssl, &curmessage, sizeof(message));
 							}
 						}
 					}
