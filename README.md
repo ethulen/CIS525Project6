@@ -13,6 +13,7 @@ Limitations:
 4. Server must contain topic KSUFootball
 5. Messages & names must be shorter than 100 characters
 6. When running chatServer, must include a port number and server topic in that order, will seg fault otherwise
+7. Must be run on cougar
 
 
 Sample Walkthrough:
