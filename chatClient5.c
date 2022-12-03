@@ -138,12 +138,12 @@ int main()
     }
     char *tmp;
     if(tmp = X509_NAME_oneline(X509_get_subject_name(cert),0,0)){
-        printf("subject: %sa\n",tmp);
-        printf("subject: %sa\n",Messagetopic);
+        //printf("subject: %sa\n",tmp);
+        //printf("subject: %sa\n",Messagetopic);
         char topicVerifiy[120];
         memset(&topicVerifiy, 0, 120);
         snprintf(topicVerifiy,120,"/CN=%s",Messagetopic);
-        printf("subject: %sa\n",topicVerifiy);
+        //printf("subject: %sa\n",topicVerifiy);
         if(strncmp(topicVerifiy,tmp,120) != 0){
             printf("This is not the correct server for topic\n");
             printf("exiting\n");
