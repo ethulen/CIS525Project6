@@ -66,6 +66,7 @@ int main()
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = options[choice].ip;
     serv_addr.sin_port = options[choice].port;
+    char * Messagetopic = options[choice].topic;
 
     SSL_library_init();
     OpenSSL_add_all_algorithms();
@@ -129,6 +130,26 @@ int main()
         fprintf(stderr, "SSL_connect() failed.\n");
         ERR_print_errors_fp(stderr);
         exit(1);
+    }
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if(!cert){
+        fprintf(stderr,"SSL_get_peer_certificate() failed.\n");
+        exit(1);
+    }
+    char *tmp;
+    if(tmp = X509_NAME_oneline(X509_get_subject_name(cert),0,0)){
+        printf("subject: %sa\n",tmp);
+        printf("subject: %sa\n",Messagetopic);
+        char topicVerifiy[120];
+        memset(&topicVerifiy, 0, 120);
+        snprintf(topicVerifiy,120,"/CN=%s",Messagetopic);
+        printf("subject: %sa\n",topicVerifiy);
+        if(strncmp(topicVerifiy,tmp,120) != 0){
+            printf("This is not the correct server for topic\n");
+            printf("exiting\n");
+            exit(0);
+
+        }
     }
     // SSLwrite(sockfd, &idmessage, sizeof(message));
     printf("type:%c\n", idmessage.type);

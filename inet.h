@@ -12,7 +12,7 @@
 #define MAX_THREADS 5
 #define MAX_SERVERS 5
 
-#define SERV_TCP_PORT 20552
+#define SERV_TCP_PORT 20551
 #define CLI_TCP_PORT 28654
 
 typedef struct message{ 
@@ -29,4 +29,4 @@ typedef struct server{
 	
 }server;
 /* Change the following to be your host addr: 129.130.10.43 for viper and 129.130.10.39 for cougar */
-#define SERV_HOST_ADDR "129.130.10.39"
+#define SERV_HOST_ADDR "129.130.10.43"
