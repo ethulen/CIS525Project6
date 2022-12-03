@@ -4,4 +4,6 @@ Group Members:
 - Ethan Hulen
 - Nathan Fleming
 
-Important Code Information
+Limitations: At the initialization of each new user into the chat, there is an extra blank line from the user. 
+             Every time the directory server is restarted, SERV_TCP_PORT needs to be changed
+             
